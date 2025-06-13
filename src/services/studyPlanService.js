@@ -39,6 +39,7 @@ Your task is to analyze this content and create a detailed study plan. Follow th
 5. Ensure a progressive learning curve
 6. Include review and practice sessions
 7. Account for different learning styles
+8. The status of first one is always current.
 
 IMPORTANT: Your response must follow this exact format, with no additional text or explanations:
 

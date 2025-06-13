@@ -426,4 +426,59 @@ exports.deleteProject = async (req, res) => {
     console.error("Error deleting project:", error);
     res.status(500).json({ message: 'Failed to delete project.' });
   }
+};
+
+// @desc    Update project progress based on study plan completion
+// @route   PUT /api/ai/projects/:projectId/progress
+// @access  Private
+exports.updateProjectProgress = async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    const userId = req.user.id;
+
+    const project = await Project.findOne({ _id: projectId, user: userId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found or not owned by user.' });
+    }
+
+    // Get the study plan for this project
+    const studyPlan = await StudyPlan.findOne({ project: projectId, user: userId });
+    if (!studyPlan) {
+      return res.status(404).json({ message: 'Study plan not found for this project.' });
+    }
+
+    // Calculate progress based on completed items
+    const totalItems = studyPlan.content.length;
+    const completedItems = studyPlan.content.filter(item => item.status === 'completed').length;
+    const studyPlanProgress = Math.round((completedItems / totalItems) * 100);
+
+    // Update project progress
+    project.progress.studyPlan = studyPlanProgress;
+    
+    // Calculate overall progress (average of all progress metrics)
+    const progressMetrics = [
+      project.progress.studyPlan,
+      project.progress.flashcards,
+      project.progress.qa,
+      project.progress.slides
+    ];
+    project.progress.overall = Math.round(progressMetrics.reduce((a, b) => a + b, 0) / progressMetrics.length);
+
+    // Update project status based on overall progress
+    if (project.progress.overall === 100) {
+      project.status = 'completed';
+    } else if (project.progress.overall > 0) {
+      project.status = 'in_progress';
+    }
+
+    await project.save();
+
+    res.status(200).json({
+      message: 'Project progress updated successfully.',
+      project: project
+    });
+  } catch (error) {
+    console.error("Error updating project progress:", error);
+    res.status(500).json({ message: 'Failed to update project progress.' });
+  }
 }; 

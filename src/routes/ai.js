@@ -1,5 +1,5 @@
 const express = require('express');
-const { uploadPdf, generateStudyPlan, generateFlashcards, generateQA, generateRoadmap, generateSlides, createProject, getProjectById, updateStudyPlanItemStatus, getStudyPlanByProjectId, getFlashcardsByProjectId, getQAByProjectId, getRoadmapByProjectId, getSlidesByProjectId, updateProject, getAllProjects, deleteProject } = require('../controllers/aiController');
+const { uploadPdf, generateStudyPlan, generateFlashcards, generateQA, generateRoadmap, generateSlides, createProject, getProjectById, updateStudyPlanItemStatus, getStudyPlanByProjectId, getFlashcardsByProjectId, getQAByProjectId, getRoadmapByProjectId, getSlidesByProjectId, updateProject, getAllProjects, deleteProject, updateProjectProgress } = require('../controllers/aiController');
 const passport = require('passport');
 const multer = require('multer');
 const path = require('path');
@@ -90,5 +90,9 @@ router.put('/study-plans/:studyPlanId/items/:itemIndex/status', updateStudyPlanI
 // @route   DELETE /api/ai/projects/:projectId
 // @desc    Delete a project
 router.delete('/projects/:projectId', deleteProject);
+
+// @route   PUT /api/ai/projects/:projectId/progress
+// @desc    Update project progress
+router.put('/projects/:projectId/progress', updateProjectProgress);
 
 module.exports = router; 
