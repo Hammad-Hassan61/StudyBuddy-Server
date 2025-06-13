@@ -5,6 +5,7 @@ const QA = require('../models/QA');
 const Roadmap = require('../models/Roadmap');
 const Slide = require('../models/Slide');
 const { generateContent } = require('../services/aiService');
+const { generateStudyPlan } = require('../services/studyPlanService');
 const pdf = require('pdf-parse');
 const fs = require('fs');
 
@@ -284,10 +285,31 @@ const generateAndSaveContent = async (req, res, ContentModel, promptPrefix, succ
 // @desc    Generate Study Plan for a project
 // @route   POST /api/ai/generate/study-plan
 // @access  Private
-exports.generateStudyPlan = (req, res) => {
-  generateAndSaveContent(req, res, StudyPlan, 
-    `Generate a detailed study plan in JSON format. The JSON should be an array of objects, where each object has 'phase' (string), 'duration' (string, e.g., '30 min'), and 'status' (string, 'completed', 'current', or 'upcoming'). Provide structured steps, topics, and estimated times.`, 
-    "Study plan generated successfully.", true);
+exports.generateStudyPlan = async (req, res) => {
+  try {
+    const { projectId, contentInput, projectName, projectDescription } = req.body;
+    const userId = req.user.id;
+
+    const project = await Project.findOne({ _id: projectId, user: userId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found or not owned by user.' });
+    }
+
+    if (!contentInput) {
+      return res.status(400).json({ message: 'Content input is required for AI generation.' });
+    }
+
+    const studyPlan = await generateStudyPlan(projectId, userId, contentInput, projectName, projectDescription);
+
+    res.status(201).json({
+      message: "Study plan generated successfully.",
+      data: studyPlan
+    });
+
+  } catch (error) {
+    console.error("Error generating study plan:", error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Generate Flashcards for a project

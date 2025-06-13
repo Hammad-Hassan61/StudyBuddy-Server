@@ -10,7 +10,7 @@ const openai = new OpenAI({
 });
 
 async function generateContent(prompt) {
-  const stream = false; // For now, we'll use non-streaming for simplicity in initial integration
+  const stream = false; 
 
   try {
     const completion = await openai.chat.completions.create({

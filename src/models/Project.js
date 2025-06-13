@@ -34,6 +34,53 @@ const projectSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  progress: {
+    overall: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    studyPlan: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    flashcards: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    qa: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    slides: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    }
+  },
+  status: {
+    type: String,
+    enum: ['not_started', 'in_progress', 'completed'],
+    default: 'not_started'
+  },
+  lastActivity: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+// Update the lastActivity timestamp before saving
+projectSchema.pre('save', function(next) {
+  this.lastActivity = new Date();
+  next();
 });
 
 module.exports = mongoose.model('Project', projectSchema); 
