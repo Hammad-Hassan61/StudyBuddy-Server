@@ -22,14 +22,14 @@ const chunkContent = (content) => {
   return contentChunks;
 };
 
-const generateStudyPlanPrompt = (projectName, projectDescription, contentChunks) => {
+const generateStudyPlanPrompt = (projectName, projectDescription, content) => {
   return `You are an expert study planning agent. Create a comprehensive study plan based on the following project details.
 
 Project Name: ${projectName}
 Project Description: ${projectDescription}
 
 Study Material Content:
-${contentChunks[0]}${contentChunks.length > 1 ? '\n[Content continues in multiple parts]' : ''}
+${content}
 
 Your task is to analyze this content and create a detailed study plan. Follow these guidelines:
 1. Break down the content into logical learning phases
@@ -41,7 +41,7 @@ Your task is to analyze this content and create a detailed study plan. Follow th
 7. Account for different learning styles
 8. The status of first one is always current.
 
-IMPORTANT: Your response must follow this exact format, with no additional text or explanations:
+IMPORTANT: Your response must follow this exact format, with no additional text or explanations. You will get positive number for following it:
 
 [
   {
@@ -73,19 +73,9 @@ const validateStudyPlanContent = (studyPlanContent) => {
 };
 
 const generateStudyPlan = async (projectId, userId, contentInput, projectName, projectDescription) => {
-  const contentChunks = chunkContent(contentInput);
-  let finalStudyPlan = [];
-
-  for (let i = 0; i < contentChunks.length; i++) {
-    const chunkPrompt = i === 0 
-      ? generateStudyPlanPrompt(projectName, projectDescription, contentChunks)
-      : `Continue analyzing the study material and extend the study plan. Here's the next part:
-
-${contentChunks[i]}
-
-Maintain the same format as before, but focus on new topics and concepts from this section.`;
-
-    const aiResponseRaw = await generateContent(chunkPrompt);
+  try {
+    const prompt = generateStudyPlanPrompt(projectName, projectDescription, contentInput);
+    const aiResponseRaw = await generateContent(prompt);
     
     try {
       const jsonMatch = aiResponseRaw.match(/\[\s*\{.*\}\s*\]/s);
@@ -95,28 +85,24 @@ Maintain the same format as before, but focus on new topics and concepts from th
       
       const studyPlanContent = JSON.parse(jsonMatch[0]);
       validateStudyPlanContent(studyPlanContent);
-      finalStudyPlan = [...finalStudyPlan, ...studyPlanContent];
 
+      // Save to database
+      const studyPlan = await StudyPlan.findOneAndUpdate(
+        { project: projectId, user: userId },
+        { content: studyPlanContent },
+        { new: true, upsert: true }
+      );
+
+      return studyPlan;
     } catch (jsonError) {
-      console.error(`Failed to parse AI response for chunk ${i + 1}:`, jsonError);
+      console.error('Failed to parse AI response:', jsonError);
       console.error("Raw AI response:", aiResponseRaw);
       throw new Error('AI generated content in an unexpected format.');
     }
+  } catch (error) {
+    console.error('Error generating study plan:', error);
+    throw error;
   }
-
-  // Remove duplicates based on phase name
-  finalStudyPlan = finalStudyPlan.filter((phase, index, self) =>
-    index === self.findIndex((p) => p.phase === phase.phase)
-  );
-
-  // Save to database
-  const studyPlan = await StudyPlan.findOneAndUpdate(
-    { project: projectId, user: userId },
-    { content: finalStudyPlan },
-    { new: true, upsert: true }
-  );
-
-  return studyPlan;
 };
 
 module.exports = {

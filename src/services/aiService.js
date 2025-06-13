@@ -16,13 +16,19 @@ async function generateContent(prompt) {
     const completion = await openai.chat.completions.create({
       messages: [
         {
+          role: "system",
+          content: "You are a helpful AI assistant that generates content in strict JSON format. Always respond with valid JSON only, no additional text or explanations."
+        },
+        {
           role: "user",
           content: prompt,
         },
       ],
       model: model,
       stream,
-      response_format: { type: "text" }
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 2000
     });
 
     if (stream) {
@@ -36,7 +42,23 @@ async function generateContent(prompt) {
       // }
       return "Streaming is not implemented for this function currently.";
     } else {
-      return completion.choices[0].message.content;
+      const content = completion.choices[0].message.content;
+      
+      // Try to parse the response as JSON
+      try {
+        // If the response is already a JSON object, stringify it
+        if (typeof content === 'object') {
+          return JSON.stringify(content);
+        }
+        
+        // If the response is a string, try to parse it
+        const parsed = JSON.parse(content);
+        return JSON.stringify(parsed);
+      } catch (parseError) {
+        console.error("Failed to parse AI response as JSON:", parseError);
+        console.error("Raw response:", content);
+        throw new Error("AI generated content is not in valid JSON format");
+      }
     }
   } catch (error) {
     console.error("Error calling Novita AI: ", error);
