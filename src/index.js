@@ -13,16 +13,30 @@ require('./config/jwtStrategy');
 const app = express();
 
 // Middleware
-// app.use(cors({
-//   origin: process.env.FRONTEND_URL,
-//   credentials: true
-// }));
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins for now
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Disposition']
+}));
 app.use(express.json());
 app.use(passport.initialize());
 
-// Serve static uploaded files
-app.use('/uploads', express.static('uploads'));
+// Serve static uploaded files with proper headers
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Content-Type', 'application/pdf');
+  next();
+}, express.static('uploads', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline');
+    }
+  }
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);
