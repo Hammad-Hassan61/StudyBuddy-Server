@@ -46,6 +46,9 @@ Your task is to create effective, visually appealing slides that cover the mater
 13. Make fonts and design such that it uses full space
 14. The content must be such that it explains each concepts clearly
 15. The content must be excessive not just signle line
+16. The content must be in detail, not just one line
+17. Make it in beautiful and modern design, not just single text
+18. DO not use any image
 IMPORTANT: Your response must be an array of HTML strings, each representing a slide. Each slide should be a self-contained HTML block with inline CSS. Do NOT include <body>, <head>, or <html> tags. Example format:
 
 [

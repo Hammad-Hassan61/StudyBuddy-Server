@@ -578,6 +578,7 @@ Your task is to create a detailed summary that:
 6. Includes relevant examples where appropriate
 7. Provides context for technical terms
 8. Summarizes complex ideas effectively
+9. Provides in detail, not just one line
 
 IMPORTANT: Format your response in HTML with the following structure:
 - Use <h1> for main topics
@@ -641,3 +642,29 @@ Do not include any additional text or explanations outside the HTML structure.`;
     res.status(500).json({ message: error.message });
   }
 }; 
+
+
+// @desc    Get summary for a project
+// @route   GET /api/ai/summary/:projectId
+// @access  Private
+exports.getSummary = async (req, res) => {
+  try {
+
+    const projectId = req.params.projectId;
+    const userId = req.user.id;
+
+    const summary = await Summary.findOne({ project: projectId, user: userId });
+
+    if (!summary) {
+      return res.status(404).json({ message: 'Summary not found for this project.' });
+    }
+
+    res.status(200).json({
+      message: "Summary retrieved successfully.",
+      data: summary
+    });
+  } catch (error) {
+    console.error("Error retrieving summary:", error);
+    res.status(500).json({ message: error.message });
+  }
+};

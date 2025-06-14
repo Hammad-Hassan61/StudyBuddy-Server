@@ -1,5 +1,5 @@
 const express = require('express');
-const { uploadPdf, generateStudyPlan, generateFlashcards, generateQA, generateRoadmap, generateSlides, createProject, getProjectById, updateStudyPlanItemStatus, getStudyPlanByProjectId, getFlashcardsByProjectId, getQAByProjectId, getRoadmapByProjectId, getSlidesByProjectId, updateProject, getAllProjects, deleteProject, updateProjectProgress, generateSummary } = require('../controllers/aiController');
+const { uploadPdf, generateStudyPlan, generateFlashcards, generateQA, generateRoadmap, generateSlides, createProject, getProjectById, updateStudyPlanItemStatus, getStudyPlanByProjectId, getFlashcardsByProjectId, getQAByProjectId, getRoadmapByProjectId, getSlidesByProjectId, updateProject, getAllProjects, deleteProject, updateProjectProgress, generateSummary , getSummary } = require('../controllers/aiController');
 const passport = require('passport');
 const multer = require('multer');
 const path = require('path');
@@ -86,6 +86,10 @@ router.post('/generate/slides', generateSlides);
 // @route   POST /api/ai/generate/summary
 // @desc    Generate Summary for a project
 router.post('/generate/summary', generateSummary);
+
+// @route   GET /api/ai/summary/:projectId
+// @desc    Get Summary for a project
+router.get('/summary/:projectId', getSummary);
 
 // @route   PUT /api/ai/study-plans/:studyPlanId/items/:itemIndex/status
 // @desc    Update status of a study plan item
