@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const passport = require('passport');
 const cors = require('cors');
 const session = require('express-session');
-
+const chatRoutes = require('./routes/chat');
 // Import routes
 const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
@@ -35,6 +35,7 @@ app.use('/uploads', express.static('uploads'));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/chat', chatRoutes); 
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
