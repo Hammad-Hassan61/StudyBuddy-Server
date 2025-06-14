@@ -8,6 +8,8 @@ const { generateContent } = require('../services/aiService');
 const { generateStudyPlan } = require('../services/studyPlanService');
 const pdf = require('pdf-parse');
 const fs = require('fs');
+const { generateFlashcards } = require('../services/flashcardService');
+const { generateQA } = require('../services/qaService');
 
 // @desc    Create a new study project
 // @route   POST /api/ai/projects
@@ -315,19 +317,61 @@ exports.generateStudyPlan = async (req, res) => {
 // @desc    Generate Flashcards for a project
 // @route   POST /api/ai/generate/flashcards
 // @access  Private
-exports.generateFlashcards = (req, res) => {
-  generateAndSaveContent(req, res, Flashcard, 
-    `Generate a list of flashcards in JSON format. The JSON should be an array of objects, where each object has 'question' (string) and 'answer' (string).`, 
-    "Flashcards generated successfully.", true);
+exports.generateFlashcards = async (req, res) => {
+  try {
+    const { projectId, contentInput, projectName } = req.body;
+    const userId = req.user.id;
+
+    const project = await Project.findOne({ _id: projectId, user: userId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found or not owned by user.' });
+    }
+
+    if (!contentInput) {
+      return res.status(400).json({ message: 'Content input is required for AI generation.' });
+    }
+
+    const flashcards = await generateFlashcards(projectId, userId, contentInput, projectName);
+
+    res.status(201).json({
+      message: "Flashcards generated successfully.",
+      data: flashcards
+    });
+
+  } catch (error) {
+    console.error("Error generating flashcards:", error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Generate Q&A for a project
 // @route   POST /api/ai/generate/qa
 // @access  Private
-exports.generateQA = (req, res) => {
-  generateAndSaveContent(req, res, QA, 
-    `Generate a series of question and answer pairs in JSON format. The JSON should be an array of objects, where each object has 'question' (string) and 'answer' (string).`, 
-    "Q&A generated successfully.", true);
+exports.generateQA = async (req, res) => {
+  try {
+    const { projectId, contentInput, projectName } = req.body;
+    const userId = req.user.id;
+
+    const project = await Project.findOne({ _id: projectId, user: userId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found or not owned by user.' });
+    }
+
+    if (!contentInput) {
+      return res.status(400).json({ message: 'Content input is required for AI generation.' });
+    }
+
+    const qa = await generateQA(projectId, userId, contentInput, projectName);
+
+    res.status(201).json({
+      message: "Q&A generated successfully.",
+      data: qa
+    });
+
+  } catch (error) {
+    console.error("Error generating Q&A:", error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Generate Roadmap for a project
