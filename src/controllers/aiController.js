@@ -10,6 +10,8 @@ const pdf = require('pdf-parse');
 const fs = require('fs');
 const { generateFlashcards } = require('../services/flashcardService');
 const { generateQA } = require('../services/qaService');
+const { generateSlides } = require('../services/slidesService');
+const Summary = require('../models/Summary');
 
 // @desc    Create a new study project
 // @route   POST /api/ai/projects
@@ -386,10 +388,26 @@ exports.generateRoadmap = (req, res) => {
 // @desc    Generate Slides for a project
 // @route   POST /api/ai/generate/slides
 // @access  Private
-exports.generateSlides = (req, res) => {
-  generateAndSaveContent(req, res, Slide, 
-    `Generate a series of HTML and CSS for presentation slides. Each slide should be a self-contained HTML block (e.g., within a <div> with inline or <style> block CSS). Ensure the CSS is minimal and directly related to the slide's presentation. Do NOT include <body>, <head>, or <html> tags. Provide an array of slide HTML strings. Example: [{ html: "<div style=\"...">Slide 1</div>" }, { html: "<div style=\"...">Slide 2</div>" }].`, 
-    "Slides generated successfully.", true); // Slides will also be parsed as JSON to get the array of HTML strings
+exports.generateSlides = async (req, res) => {
+  try {
+    const { projectId, contentInput, projectName } = req.body;
+    const userId = req.user.id;
+
+    if (!contentInput) {
+      return res.status(400).json({ message: 'Content is required' });
+    }
+
+    const project = await Project.findOne({ _id: projectId, user: userId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const slides = await generateSlides(projectId, userId, contentInput, projectName || project.name);
+    res.json({ data: slides });
+  } catch (error) {
+    console.error('Error in generateSlides:', error);
+    res.status(500).json({ message: error.message || 'Error generating slides' });
+  }
 };
 
 // @desc    Update status of a specific study plan item
@@ -524,5 +542,102 @@ exports.updateProjectProgress = async (req, res) => {
   } catch (error) {
     console.error("Error updating project progress:", error);
     res.status(500).json({ message: 'Failed to update project progress.' });
+  }
+};
+
+// @desc    Generate Summary for a project
+// @route   POST /api/ai/generate/summary
+// @access  Private
+exports.generateSummary = async (req, res) => {
+  try {
+    const { projectId, contentInput, projectName } = req.body;
+    const userId = req.user.id;
+
+    const project = await Project.findOne({ _id: projectId, user: userId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found or not owned by user.' });
+    }
+
+    if (!contentInput) {
+      return res.status(400).json({ message: 'Content input is required for AI generation.' });
+    }
+
+    const prompt = `You are an expert study assistant. Create a comprehensive summary of the following project and content.
+
+Project Name: ${projectName}
+
+Study Material Content:
+${contentInput}
+
+Your task is to create a detailed summary that:
+1. Captures the main ideas and key concepts
+2. Organizes information in a logical structure
+3. Highlights important details and relationships
+4. Uses clear and concise language
+5. Maintains accuracy and completeness
+6. Includes relevant examples where appropriate
+7. Provides context for technical terms
+8. Summarizes complex ideas effectively
+
+IMPORTANT: Format your response in HTML with the following structure:
+- Use <h1> for main topics
+- Use <h2> for subtopics
+- Use <h3> for specific concepts
+- Use <p> for detailed explanations
+- Use <ul> and <li> for lists
+- Use <strong> for important terms
+- Use <em> for emphasis
+- Use <div class="example"> for examples
+- Use <div class="note"> for important notes
+
+CRITICAL INSTRUCTIONS:
+1. DO NOT return JSON format
+2. DO NOT use any JSON structure or keys
+3. DO NOT include any parentheses or brackets
+4. DO NOT include any metadata or additional text
+5. ONLY return the HTML content directly
+6. Start with <h1> and end with the last HTML tag
+7. Make sure all content is properly wrapped in HTML tags
+8. Ensure proper nesting of HTML elements
+9. Include proper spacing between sections
+10. Use semantic HTML structure
+
+Example of correct format:
+<h1>Introduction to Machine Learning</h1>
+<p>Machine learning is a field of study that gives computers the ability to learn without being explicitly programmed. It involves programming computers to optimize a performance criterion using example data or past experience.</p>
+
+<h2>Definition</h2>
+<p>A computer program is said to learn from experience E with respect to some class of tasks T and performance measure P, if its performance at tasks T, as measured by P, improves with experience E.</p>
+
+<h2>Applications</h2>
+<ul>
+  <li>Retail business: Studying consumer behavior</li>
+  <li>Finance: Analyzing past data for credit applications</li>
+  <li>Manufacturing: Optimization and control</li>
+</ul>
+
+<div class="example">
+  <h3>Real-world Example</h3>
+  <p>In healthcare, machine learning algorithms analyze patient data to predict disease risks and recommend personalized treatment plans.</p>
+</div>
+
+Do not include any additional text or explanations outside the HTML structure.`;
+
+    const aiResponse = await generateContent(prompt);
+
+    const newSummary = await Summary.create({
+      project: projectId,
+      user: userId,
+      content: aiResponse,
+    });
+
+    res.status(201).json({
+      message: "Summary generated successfully.",
+      data: newSummary
+    });
+
+  } catch (error) {
+    console.error("Error generating summary:", error);
+    res.status(500).json({ message: error.message });
   }
 }; 

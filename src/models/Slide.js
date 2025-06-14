@@ -11,14 +11,16 @@ const slideSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  content: {
+  content: [{
+    html: {
     type: String,
-    required: true,
-  }, // This could be Markdown, HTML, or a structured JSON for slide data
-  generatedAt: {
+      required: true
+    }
+  }],
+  dateGenerated: {
     type: Date,
-    default: Date.now,
-  },
+    default: Date.now
+  }
 });
 
 module.exports = mongoose.model('Slide', slideSchema); 
